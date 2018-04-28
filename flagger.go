@@ -11,7 +11,7 @@ import (
 	"io"
 )
 
-type Flag struct {
+type FlagCfg struct {
 	Name        string
 	Description string `hcl:"desc"`
 	ShortFlag   string `hcl:"short"`
@@ -32,7 +32,7 @@ type Arg struct {
 type FlaggerConfig struct {
 	Name        string
 	Description string `hcl:"desc"`
-	Flags       map[string]*Flag
+	Flags       map[string]*FlagCfg
 }
 
 type Flagger struct {
@@ -92,35 +92,48 @@ func (f *Flagger) AddFlags() error {
 	config := f.cfg
 	flags := config.Flags
 	for _, cfg := range flags {
-		flag := f.app.Flag(cfg.Name, cfg.Description)
-		if cfg.ShortFlag != "" {
-			short := []rune(cfg.ShortFlag)[0]
-			flag.Short(short)
-		}
-		if cfg.Required {
-			flag.Required()
-		}
-		if cfg.Default != "" {
-			flag.Default(cfg.Default)
-		}
-		env := cfg.EnvVar
-		if env == "" {
-			env = strings.ToUpper(cfg.Name)
-		}
-		flagType := cfg.Type
-		if flagType == "" {
-			flagType = "string"
-		}
-		switch flagType {
-		case "string":
-			f.stringVars[env] = flag.String()
-		case "int":
-			f.intVars[env] = flag.Int()
-		default:
-			return errors.Errorf("The flag %q has an unknown type: %q", cfg.Name, flagType)
+		err := f.AddFlag(cfg)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
+	flag := app.Flag(cfg.Name, cfg.Description)
+	if len(cfg.ShortFlag) == 1 {
+		flag.Short([]rune(cfg.ShortFlag)[0])
+	}
+	if cfg.Required {
+		flag.Required()
+	}
+	if cfg.Default != "" {
+		flag.Default(cfg.Default)
+	}
+	return flag
+}
+
+func (f *Flagger)AddFlag(cfg *FlagCfg) error {
+	var err error
+	flag := cfg.AddToApp(f.app)
+	env := cfg.EnvVar
+	if env == "" {
+		env = strings.ToUpper(cfg.Name)
+	}
+	flagType := cfg.Type
+	if flagType == "" {
+		flagType = "string"
+	}
+	switch flagType {
+	case "string":
+		f.stringVars[env] = flag.String()
+	case "int":
+		f.intVars[env] = flag.Int()
+	default:
+		err = errors.Errorf("The flag %q has an unknown type: %q", cfg.Name, flagType)
+	}
+	return err
 }
 
 func (f *Flagger) Parse() {

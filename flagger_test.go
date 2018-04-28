@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"fmt"
 )
 
 func strPtr(str string) *string {
@@ -14,6 +16,60 @@ func strPtr(str string) *string {
 
 func intPtr(i int) *int {
 	return &i
+}
+
+func TestFlagCfg_AddToApp(t *testing.T) {
+	app := kingpin.New("", "")
+	flagCfg := &FlagCfg{
+		Name: "foo", Description: "bar", ShortFlag: "f", Default: "hi", Required: true,
+	}
+	ex := &kingpin.FlagModel{
+		Name: "foo",
+		Help: "bar",
+		Short: rune("f"[0]),
+		Default: []string{"hi"},
+		Required: true,
+	}
+	clause := flagCfg.AddToApp(app)
+	fmt.Println(clause)
+	assert.Equal(t, ex, clause.Model())
+}
+
+func TestFlagger_AddFlag(t *testing.T) {
+	t.Run("string var", func(t *testing.T) {
+		app := kingpin.New("", "")
+		flagger := &Flagger{
+			app: app,
+			stringVars: make(map[string]*string),
+			intVars:    make(map[string]*int),
+		}
+		flagCfg := &FlagCfg{
+			Name: "foo", Description: "bar", ShortFlag: "f", Default: "hi", Required: true,
+		}
+		err := flagger.AddFlag(flagCfg)
+		assert.Nil(t, err)
+		assert.Len(t, flagger.stringVars, 1)
+		_, ok := flagger.stringVars["FOO"]
+		assert.True(t, ok)
+	})
+
+	t.Run("int var", func(t *testing.T) {
+		app := kingpin.New("", "")
+		flagger := &Flagger{
+			app: app,
+			stringVars: make(map[string]*string),
+			intVars:    make(map[string]*int),
+		}
+		flagCfg := &FlagCfg{
+			Name: "foo", Default: "2", Type: "int",
+		}
+		err := flagger.AddFlag(flagCfg)
+		assert.Nil(t, err)
+		assert.Len(t, flagger.intVars, 1)
+		_, ok := flagger.intVars["FOO"]
+		assert.True(t, ok)
+	})
+
 }
 
 func TestReadConfigErrs(t *testing.T) {
@@ -49,7 +105,7 @@ flags = {
 	ex := FlaggerConfig{
 		Name:        "foo",
 		Description: "bar",
-		Flags: map[string]*Flag{
+		Flags: map[string]*FlagCfg{
 			"flagfoo": {
 				Name:        "flagfoo",
 				Description: "flagdesc",

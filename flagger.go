@@ -12,29 +12,29 @@ import (
 )
 
 type FlagCfg struct {
-	Name        string
-	Description string `hcl:"desc"`
-	ShortFlag   string `hcl:"short"`
-	Type        string
-	Default     string
-	EnvVar      string `hcl:"env"`
-	Required    bool
+	Name     string
+	Help     string
+	Short    string
+	Type     string
+	Default  string
+	Env      string
+	Required bool
 }
 
 type ArgCfg struct {
-	Name        string
-	Description string `hcl:"desc"`
-	Type        string
-	Default     string
-	EnvVar 		string `hcl:"env"`
-	Required    bool
+	Name     string
+	Help     string
+	Type     string
+	Default  string
+	Env      string
+	Required bool
 }
 
 type FlaggerConfig struct {
-	Name        string
-	Description string `hcl:"desc"`
-	Flags       map[string]*FlagCfg
-	Args		[]*ArgCfg
+	Name  string
+	Help  string
+	Flags map[string]*FlagCfg
+	Args  []*ArgCfg
 }
 
 type Flagger struct {
@@ -54,15 +54,15 @@ func ReadConfig(b []byte) (*FlaggerConfig, error) {
 		if v.Name == "" {
 			v.Name = k
 		}
-		if len(v.ShortFlag) > 1 {
-			return nil, errors.Errorf("short flags must be a single character: %q is longer", v.ShortFlag)
+		if len(v.Short) > 1 {
+			return nil, errors.Errorf("short flags must be a single character: %q is longer", v.Short)
 		}
 	}
 	return cfg, nil
 }
 
 func New(cfg *FlaggerConfig) *Flagger {
-	app := kingpin.New(cfg.Name, cfg.Description)
+	app := kingpin.New(cfg.Name, cfg.Help)
 	app.HelpFlag.PreAction(func(context *kingpin.ParseContext) error {
 		app.Usage([]string{})
 		os.Exit(1)
@@ -110,7 +110,7 @@ func (f *Flagger) AddArgs() error {
 }
 
 func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.ArgClause{
-	arg := app.Arg(cfg.Name, cfg.Description)
+	arg := app.Arg(cfg.Name, cfg.Help)
 	if cfg.Required {
 		arg.Required()
 	}
@@ -121,9 +121,9 @@ func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.ArgClause{
 }
 
 func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
-	flag := app.Flag(cfg.Name, cfg.Description)
-	if len(cfg.ShortFlag) == 1 {
-		flag.Short([]rune(cfg.ShortFlag)[0])
+	flag := app.Flag(cfg.Name, cfg.Help)
+	if len(cfg.Short) == 1 {
+		flag.Short([]rune(cfg.Short)[0])
 	}
 	if cfg.Required {
 		flag.Required()
@@ -136,7 +136,7 @@ func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
 
 func (f *Flagger)AddArg(cfg *ArgCfg) error {
 	arg := cfg.AddToApp(f.app)
-	env := cfg.EnvVar
+	env := cfg.Env
 	if env == "" {
 		env = strings.ToUpper(cfg.Name)
 	}
@@ -157,7 +157,7 @@ func (f *Flagger)AddArg(cfg *ArgCfg) error {
 
 func (f *Flagger)AddFlag(cfg *FlagCfg) error {
 	flag := cfg.AddToApp(f.app)
-	env := cfg.EnvVar
+	env := cfg.Env
 	if env == "" {
 		env = strings.ToUpper(cfg.Name)
 	}

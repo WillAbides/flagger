@@ -20,7 +20,7 @@ func intPtr(i int) *int {
 func TestFlagCfg_AddToApp(t *testing.T) {
 	app := kingpin.New("", "")
 	flagCfg := &FlagCfg{
-		Name: "foo", Description: "bar", ShortFlag: "f", Default: "hi", Required: true,
+		Name: "foo", Help: "bar", Short: "f", Default: "hi", Required: true,
 	}
 	ex := &kingpin.FlagModel{
 		Name: "foo",
@@ -36,7 +36,7 @@ func TestFlagCfg_AddToApp(t *testing.T) {
 func TestArgCfg_AddToApp(t *testing.T) {
 	app := kingpin.New("", "")
 	argCfg := &ArgCfg{
-		Name: "foo", Description: "bar", Default: "hi", Required: true,
+		Name: "foo", Help: "bar", Default: "hi", Required: true,
 	}
 	ex := &kingpin.ArgModel{
 		Name: "foo",
@@ -57,7 +57,7 @@ func TestFlagger_AddFlag(t *testing.T) {
 			intVars:    make(map[string]*int),
 		}
 		flagCfg := &FlagCfg{
-			Name: "foo", Description: "bar", ShortFlag: "f", Default: "hi", Required: true,
+			Name: "foo", Help: "bar", Short: "f", Default: "hi", Required: true,
 		}
 		err := flagger.AddFlag(flagCfg)
 		assert.Nil(t, err)
@@ -94,7 +94,7 @@ func TestFlagger_AddArg(t *testing.T) {
 			intVars:    make(map[string]*int),
 		}
 		argCfg := &ArgCfg{
-			Name: "foo", Description: "bar", Default: "hi", Required: true,
+			Name: "foo", Help: "bar", Default: "hi", Required: true,
 		}
 		err := flagger.AddArg(argCfg)
 		assert.Nil(t, err)
@@ -111,7 +111,7 @@ func TestFlagger_AddArg(t *testing.T) {
 			intVars:    make(map[string]*int),
 		}
 		argCfg := &ArgCfg{
-			Name: "foo", Description: "bar", Default: "hi", Required: true, Type: "int",
+			Name: "foo", Help: "bar", Default: "hi", Required: true, Type: "int",
 		}
 		err := flagger.AddArg(argCfg)
 		assert.Nil(t, err)
@@ -143,33 +143,33 @@ func TestReadConfigValid(t *testing.T) {
 	hh :=
 		`
 name = "foo"
-desc = "bar"
+help = "bar"
 args = [
-  { name = "myarg" desc = "myargdesc" type = "int"required = true },
+  { name = "myarg" help = "myarghelp" type = "int"required = true },
 ]
 flags = {
   flagfoo = {
-    desc = "flagdesc" short = "h" type = "string" default = "blah"
+    help = "flaghelp" short = "h" type = "string" default = "blah"
     required = true
   },
   bar = {},
 }`
 	ex := FlaggerConfig{
-		Name:        "foo",
-		Description: "bar",
+		Name: "foo",
+		Help: "bar",
 		Args: []*ArgCfg{
 			{
-				Name: "myarg", Description: "myargdesc", Type: "int", Required: true,
+				Name: "myarg", Help: "myarghelp", Type: "int", Required: true,
 			},
 		},
 		Flags: map[string]*FlagCfg{
 			"flagfoo": {
-				Name:        "flagfoo",
-				Description: "flagdesc",
-				ShortFlag:   "h",
-				Type:        "string",
-				Default:     "blah",
-				Required:    true,
+				Name:     "flagfoo",
+				Help:     "flaghelp",
+				Short:    "h",
+				Type:     "string",
+				Default:  "blah",
+				Required: true,
 			},
 			"bar": {
 				Name: "bar",

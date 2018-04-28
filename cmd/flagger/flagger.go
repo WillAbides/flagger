@@ -12,6 +12,10 @@ func main() {
 		panic(err)
 	}
 	flaggy := flagger.New(cfg)
+	err = flaggy.AddArgs()
+	if err != nil {
+		panic(err)
+	}
 	err = flaggy.AddFlags()
 	if err != nil {
 		panic(err)

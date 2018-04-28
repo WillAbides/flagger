@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"fmt"
 )
 
 func strPtr(str string) *string {
@@ -31,7 +30,21 @@ func TestFlagCfg_AddToApp(t *testing.T) {
 		Required: true,
 	}
 	clause := flagCfg.AddToApp(app)
-	fmt.Println(clause)
+	assert.Equal(t, ex, clause.Model())
+}
+
+func TestArgCfg_AddToApp(t *testing.T) {
+	app := kingpin.New("", "")
+	argCfg := &ArgCfg{
+		Name: "foo", Description: "bar", Default: "hi", Required: true,
+	}
+	ex := &kingpin.ArgModel{
+		Name: "foo",
+		Help: "bar",
+		Default: []string{"hi"},
+		Required: true,
+	}
+	clause := argCfg.AddToApp(app)
 	assert.Equal(t, ex, clause.Model())
 }
 
@@ -72,6 +85,42 @@ func TestFlagger_AddFlag(t *testing.T) {
 
 }
 
+func TestFlagger_AddArg(t *testing.T) {
+	t.Run("string var", func(t *testing.T) {
+		app := kingpin.New("", "")
+		flagger := &Flagger{
+			app: app,
+			stringVars: make(map[string]*string),
+			intVars:    make(map[string]*int),
+		}
+		argCfg := &ArgCfg{
+			Name: "foo", Description: "bar", Default: "hi", Required: true,
+		}
+		err := flagger.AddArg(argCfg)
+		assert.Nil(t, err)
+		assert.Len(t, flagger.stringVars, 1)
+		_, ok := flagger.stringVars["FOO"]
+		assert.True(t, ok)
+	})
+
+	t.Run("int var", func(t *testing.T) {
+		app := kingpin.New("", "")
+		flagger := &Flagger{
+			app: app,
+			stringVars: make(map[string]*string),
+			intVars:    make(map[string]*int),
+		}
+		argCfg := &ArgCfg{
+			Name: "foo", Description: "bar", Default: "hi", Required: true, Type: "int",
+		}
+		err := flagger.AddArg(argCfg)
+		assert.Nil(t, err)
+		assert.Len(t, flagger.intVars, 1)
+		_, ok := flagger.intVars["FOO"]
+		assert.True(t, ok)
+	})
+}
+
 func TestReadConfigErrs(t *testing.T) {
 	t.Run("long short flag", func(t *testing.T) {
 		in := []byte(`flags = { abc = { short = "hi" } }`)
@@ -95,16 +144,24 @@ func TestReadConfigValid(t *testing.T) {
 		`
 name = "foo"
 desc = "bar"
+args = [
+  { name = "myarg" desc = "myargdesc" type = "int"required = true },
+]
 flags = {
- flagfoo = {
-   desc = "flagdesc" short = "h" type = "string" default = "blah"
-   required = true
- },
- bar = {},
+  flagfoo = {
+    desc = "flagdesc" short = "h" type = "string" default = "blah"
+    required = true
+  },
+  bar = {},
 }`
 	ex := FlaggerConfig{
 		Name:        "foo",
 		Description: "bar",
+		Args: []*ArgCfg{
+			{
+				Name: "myarg", Description: "myargdesc", Type: "int", Required: true,
+			},
+		},
 		Flags: map[string]*FlagCfg{
 			"flagfoo": {
 				Name:        "flagfoo",

@@ -21,11 +21,12 @@ type FlagCfg struct {
 	Required    bool
 }
 
-type Arg struct {
+type ArgCfg struct {
 	Name        string
 	Description string `hcl:"desc"`
 	Type        string
 	Default     string
+	EnvVar 		string `hcl:"env"`
 	Required    bool
 }
 
@@ -33,6 +34,7 @@ type FlaggerConfig struct {
 	Name        string
 	Description string `hcl:"desc"`
 	Flags       map[string]*FlagCfg
+	Args		[]*ArgCfg
 }
 
 type Flagger struct {
@@ -78,7 +80,6 @@ func (f *Flagger) EchoVars() {
 	f.WriteEnvOutput(os.Stdout)
 }
 
-
 func (f *Flagger) WriteEnvOutput(w io.Writer) {
 	for name, val := range f.stringVars {
 		fmt.Fprintf(w, "%s=%q\n", name, *val)
@@ -89,15 +90,34 @@ func (f *Flagger) WriteEnvOutput(w io.Writer) {
 }
 
 func (f *Flagger) AddFlags() error {
-	config := f.cfg
-	flags := config.Flags
-	for _, cfg := range flags {
+	for _, cfg := range f.cfg.Flags {
 		err := f.AddFlag(cfg)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (f *Flagger) AddArgs() error {
+	for _, cfg := range f.cfg.Args {
+		err := f.AddArg(cfg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.ArgClause{
+	arg := app.Arg(cfg.Name, cfg.Description)
+	if cfg.Required {
+		arg.Required()
+	}
+	if cfg.Default != "" {
+		arg.Default(cfg.Default)
+	}
+	return arg
 }
 
 func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
@@ -114,8 +134,28 @@ func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
 	return flag
 }
 
+func (f *Flagger)AddArg(cfg *ArgCfg) error {
+	arg := cfg.AddToApp(f.app)
+	env := cfg.EnvVar
+	if env == "" {
+		env = strings.ToUpper(cfg.Name)
+	}
+	argType := cfg.Type
+	if argType == "" {
+		argType = "string"
+	}
+	switch argType {
+	case "string":
+		f.stringVars[env] = arg.String()
+	case "int":
+		f.intVars[env] = arg.Int()
+	default:
+		return errors.Errorf("The arg %q has an unknown type: %q", cfg.Name, argType)
+	}
+	return nil
+}
+
 func (f *Flagger)AddFlag(cfg *FlagCfg) error {
-	var err error
 	flag := cfg.AddToApp(f.app)
 	env := cfg.EnvVar
 	if env == "" {
@@ -131,9 +171,9 @@ func (f *Flagger)AddFlag(cfg *FlagCfg) error {
 	case "int":
 		f.intVars[env] = flag.Int()
 	default:
-		err = errors.Errorf("The flag %q has an unknown type: %q", cfg.Name, flagType)
+		return errors.Errorf("The flag %q has an unknown type: %q", cfg.Name, flagType)
 	}
-	return err
+	return nil
 }
 
 func (f *Flagger) Parse() {

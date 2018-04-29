@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/hcl"
 	"os"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/alecthomas/kingpin.v3-unstable"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"strings"
@@ -62,16 +62,10 @@ func ReadConfig(b []byte) (*FlaggerConfig, error) {
 }
 
 func New(cfg *FlaggerConfig) *Flagger {
-	app := kingpin.New(cfg.Name, cfg.Help)
-	app.HelpFlag.PreAction(func(context *kingpin.ParseContext) error {
-		app.Usage([]string{})
-		os.Exit(1)
-		return nil
-	})
 	return &Flagger{
 		stringVars: make(map[string]*string),
 		intVars:    make(map[string]*int),
-		app:        app,
+		app:        kingpin.New(cfg.Name, cfg.Help).Writers(os.Stderr, os.Stderr),
 		cfg:        cfg,
 	}
 }
@@ -109,7 +103,7 @@ func (f *Flagger) AddArgs() error {
 	return nil
 }
 
-func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.ArgClause{
+func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.Clause{
 	arg := app.Arg(cfg.Name, cfg.Help)
 	if cfg.Required {
 		arg.Required()
@@ -120,7 +114,7 @@ func (cfg *ArgCfg) AddToApp(app *kingpin.Application) *kingpin.ArgClause{
 	return arg
 }
 
-func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.FlagClause{
+func (cfg *FlagCfg)AddToApp(app *kingpin.Application) *kingpin.Clause{
 	flag := app.Flag(cfg.Name, cfg.Help)
 	if len(cfg.Short) == 1 {
 		flag.Short([]rune(cfg.Short)[0])

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/alecthomas/kingpin.v3-unstable"
 )
 
 func strPtr(str string) *string {
@@ -22,7 +22,7 @@ func TestFlagCfg_AddToApp(t *testing.T) {
 	flagCfg := &FlagCfg{
 		Name: "foo", Help: "bar", Short: "f", Default: "hi", Required: true,
 	}
-	ex := &kingpin.FlagModel{
+	ex := &kingpin.ClauseModel{
 		Name: "foo",
 		Help: "bar",
 		Short: rune("f"[0]),
@@ -38,7 +38,7 @@ func TestArgCfg_AddToApp(t *testing.T) {
 	argCfg := &ArgCfg{
 		Name: "foo", Help: "bar", Default: "hi", Required: true,
 	}
-	ex := &kingpin.ArgModel{
+	ex := &kingpin.ClauseModel{
 		Name: "foo",
 		Help: "bar",
 		Default: []string{"hi"},
